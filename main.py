@@ -1,4 +1,3 @@
-from astar import reconstruct_path
 import pygame
 import math
 from queue import PriorityQueue
@@ -91,9 +90,9 @@ class Spot:
 def h(p1, p2): # The heuristic Function using Manhattan distance
     x1, y1 = p1
     x2, y2 = p2
-    return abs(x1 - x2) + abs(y1, y2)
+    return abs(x1 - x2) + abs(y1 - y2)
 
-def reconstruct_path(came_from, end, draw):
+def reconstruct_path(came_from, current, draw):
     while current in came_from:
         current = came_from[current]
         current.make_path()
