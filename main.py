@@ -27,13 +27,10 @@ OPEN1 = (0, 106, 0)
 PATH1 = (255, 200, 0)
 PATH2 = (255, 254, 0)
 PATH3 = (0, 200, 0)
-BG_COLOR = (6, 69, 96)
-BUTTON_COLOR = (19, 175, 240)
-SCREEN_COLOR = (204, 230, 255)
 VISITED = []
 
 #####################################################
-# THIS IS WHERE WE BUILD SPOT OBJECTS              #
+# THIS IS WHERE WE BUILD NODE OBJECTS               #
 #####################################################
 class Node:
     def __init__(self, row, col, width, total_rows):
@@ -196,7 +193,7 @@ class Button:
             self.top_color = '#475F77'
     def is_hover(self, pos):
         #Pos is the mouse position or a tuple of (x,y) coordinates
-        if pos[0] > self.x-self.height//2 and pos[0] < self.x + self.width+self.height//2:
+        if pos[0] > self.x-self.height//2 and pos[0] < self.x + self.width + self.height // 2:
             if pos[1] > self.y and pos[1] < self.y + self.height:
                 return True
             
@@ -207,7 +204,7 @@ class Button:
 ###################################################
 class InfoScreen:
     def __init__(self, x, y, width, height, text=''):
-        self.color = WHITE
+        self.color = '#475F77'
         self.x = x
         self.y = y
         self.width = width
@@ -231,21 +228,21 @@ class InfoScreen:
         return self.text1
 
     def draw(self, win):
-        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height), 0)
+        pygame.draw.rect(win, BLACK, (self.x, self.y, self.width, self.height), 0)
         
         if self.label1 != '':
-            label = gui_font.render(self.label1, 1, (0,0,0))
-            win.blit(label, (self.x + 10, self.y + 10))
+            label = gui_font.render(self.label1, 1, WHITE)
+            win.blit(label, (self.x + 215, self.y + 10))
         
         if self.text1 != '':
-            text = gui_font.render(self.text1, 1, (0,0,0))
-            win.blit(text, (self.x + (self.width / 2 - text.get_width() / 2), self.y + (self.height / 2 - text.get_height() / 2) - 50))
+            text = gui_font.render(self.text1, 1, WHITE)
+            win.blit(text, (self.x + 150, self.y + 100))
         if self.text2 != '':
-            text = gui_font.render(self.text2, 1, (0,0,0))
-            win.blit(text, (self.x + (self.width / 2 - text.get_width() / 2), self.y + (self.height / 2 - text.get_height() / 2)))
+            text = gui_font.render(self.text2, 1, WHITE)
+            win.blit(text, (self.x + 150, self.y + 150))
         if self.text3 != '':
-            text = gui_font.render(self.text3, 1, (0,0,0))
-            win.blit(text, (self.x + (self.width / 2 - text.get_width() / 2), 50 + self.y + (self.height / 2 - text.get_height() / 2)))
+            text = gui_font.render(self.text3, 1, WHITE)
+            win.blit(text, (self.x + 150, self.y + 200))
 
 def h(p1, p2): 
     # The heuristic Function using Manhattan distance
@@ -313,7 +310,7 @@ def reconstruct_path(came_from, start, current, draw, visited,  win, width, grid
             pygame.display.update()
     return path, c-1
 
-def algorithm(draw, grid, start, end, output, win, width):
+def astar(draw, grid, start, end, output, win, width):
     # Using A* Search Algorithm
     count = 0
     vis = 0
@@ -337,15 +334,24 @@ def algorithm(draw, grid, start, end, output, win, width):
 
         if current == end:
             path, inc = reconstruct_path(came_from, start, end, draw, visited, win, width, grid)
+            output.set_text1(f"Path Length: {inc}")
+            output.set_text2(f"Number Of Visited Nodes: {vis}")
+            if vis != 0:
+                output.set_text3(f"Efficiency: {np.round(inc / vis, decimals = 3)}")
+
             start.make_start()
             return visited, path
-
+        c = 1
         for neighbor in current.neighbors:
-            temp_g_score = g_score[current] + 1
+            if not neighbor.is_barrier():
+                if neighbor.is_weight():
+                    c = 5
+            temp_g_score = g_score[current] + c
+            temp_f_score = temp_g_score + h(neighbor.get_pos(), end.get_pos())
             if temp_g_score < g_score[neighbor]: #There is a shorter path --> Update
                 came_from[neighbor] = current
                 g_score[neighbor] = temp_g_score
-                f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
+                f_score[neighbor] = temp_f_score
                 if neighbor not in open_set_hash:
                     count += 1
                     open_set.put((f_score[neighbor], count, neighbor))
@@ -354,6 +360,7 @@ def algorithm(draw, grid, start, end, output, win, width):
                     nebrs.append(neighbor)
                     neighbor.make_open()
         if current != start:
+            vis += c
             visited.append(current)
             current.make_visited()
         visit_animation(visited)
@@ -409,6 +416,7 @@ def draw(win, grid, rows, width, algorithms, options, output, menu = True):
         win.blit(text, (width+delta // 6 + 60, ((end-top) / 2) + top))
         for option in options:
             option.draw(win)
+        output.draw(WIN)
     pygame.display.update()
 
 def get_clicked_pos(pos, rows, width):
@@ -430,7 +438,7 @@ def main(win, width):
     button_height = ht // 15
     button_width = delta // 4
     algorithms = [
-        Button(width + delta / 4 + 10, top_start, button_width - button_height + 200, button_height, "A* Search Algorithm", 6)
+        Button(width + delta / 4 + 10, top_start, button_width - button_height + 210, button_height, "A* Search Algorithm", 6)
     ]
     top_start = top_start + 500
     options = [
@@ -438,7 +446,11 @@ def main(win, width):
         Button(width+delta // 5 + 300, top_start - 300, 100, button_height, "-", 6),
         Button(width+delta // 5 + 200, top_start - 300, 100, button_height, "+", 6),
     ] #Options
-    output = [] #Info Screen
+    output = InfoScreen(width + delta // 8 - 70, ht - 320, 660, 300, "Choose an Algorithm")
+    output.set_label1(f"Grid: {ROWS} x {ROWS}")
+    output.set_text1("1. Pick starting node")
+    output.set_text2("2. Pick ending node")
+    output.set_text3("3. Choose an algorithm")
     start = None
     end = None
 
@@ -482,6 +494,7 @@ def main(win, width):
                     elif node != end and node != start:
                         node.make_barrier()
                 elif algorithms[0].is_hover(pos):
+                    output.draw(win)
                     if len(weighted):
                         for node in weighted:
                             node.make_weight()
@@ -493,9 +506,19 @@ def main(win, width):
                                     node.reset()
                         visited = []
                         path = []
+                        output.set_text1("Finding...")
+                        output.set_text2("")
+                        output.set_text3("")
+                        output.draw(win)
                         pygame.display.update()
-                        visited, path = algorithm(lambda: draw(win, grid, ROWS, width, algorithms, options, output), grid, start, end, output, win, width)
+                        visited, path = astar(lambda: draw(win, grid, ROWS, width, algorithms, options, output), grid, start, end, output, win, width)
+                        if not path:
+                            output.set_text1("Path not available") 
                 elif options[0].is_hover(pos):
+                    output.set_text1("1. Pick starting node")
+                    output.set_text2("2. Pick ending node")
+                    output.set_text3("3. Choose an algorithm")
+                    output.draw(win)
                     pygame.display.update()
                     weighted = []
                     start = None
@@ -516,9 +539,10 @@ def main(win, width):
                     for row in grid:
                         for node in row:
                             node.reset()
-                    if ROWS>5:
-                        ROWS-=1
+                    if ROWS > 5:
+                        ROWS -= 1
                         grid = make_grid(ROWS, width)
+                    output.set_label1(f"Grid: {ROWS} x {ROWS}")
                 elif options[2].is_hover(pos):
                     weighted = []
                     start = None
@@ -529,9 +553,10 @@ def main(win, width):
                     for row in grid:
                         for node in row:
                             node.reset()
-                    if ROWS<100:
-                        ROWS+=1
+                    if ROWS < 100:
+                        ROWS += 1
                         grid = make_grid(ROWS, width)
+                    output.set_label1(f"Grid: {ROWS} x {ROWS}")
     pygame.quit()
     sys.exit()
 
