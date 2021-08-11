@@ -232,17 +232,17 @@ class InfoScreen:
         
         if self.label1 != '':
             label = gui_font.render(self.label1, 1, WHITE)
-            win.blit(label, (self.x + 215, self.y + 10))
+            win.blit(label, (self.x + 230, self.y + 10))
         
         if self.text1 != '':
             text = gui_font.render(self.text1, 1, WHITE)
-            win.blit(text, (self.x + 150, self.y + 100))
+            win.blit(text, (self.x + 170, self.y + 100))
         if self.text2 != '':
             text = gui_font.render(self.text2, 1, WHITE)
-            win.blit(text, (self.x + 150, self.y + 150))
+            win.blit(text, (self.x + 170, self.y + 150))
         if self.text3 != '':
             text = gui_font.render(self.text3, 1, WHITE)
-            win.blit(text, (self.x + 150, self.y + 200))
+            win.blit(text, (self.x + 170, self.y + 200))
 
 def h(p1, p2): 
     # The heuristic Function using Manhattan distance
@@ -371,6 +371,134 @@ def astar(draw, grid, start, end, output, win, width):
         pygame.display.update()
     return visited, False
 
+def dijkstra(draw, grid, start, end, output, win, width):
+    # Using A* Search Algorithm
+    count = 0
+    vis = 0
+    open_set = PriorityQueue()
+    open_set.put((0, count, start))
+    came_from = {} #Keep track of what node came from where
+    g_score = {spot: float("inf") for row in grid for spot in row}
+    g_score[start] = 0
+    f_score = {spot: float("inf") for row in grid for spot in row}
+    f_score[start] = h(start.get_pos(), end.get_pos())
+    visited = []
+    nebrs = []
+    open_set_hash = {start} #Check if a certain item is in the priority queue
+    while not open_set.empty():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+        current = open_set.get()[2]
+        open_set_hash.remove(current)
+
+        if current == end:
+            path, inc = reconstruct_path(came_from, start, end, draw, visited, win, width, grid)
+            output.set_text1(f"Path Length: {inc}")
+            output.set_text2(f"Number Of Visited Nodes: {vis}")
+            if vis != 0:
+                output.set_text3(f"Efficiency: {np.round(inc / vis, decimals = 3)}")
+
+            start.make_start()
+            return visited, path
+        c = 1
+        for neighbor in current.neighbors:
+            if not neighbor.is_barrier():
+                if neighbor.is_weight():
+                    c = 5
+            temp_g_score = g_score[current] + c
+            temp_f_score = temp_g_score
+            if temp_g_score < g_score[neighbor]: #There is a shorter path --> Update
+                came_from[neighbor] = current
+                g_score[neighbor] = temp_g_score
+                f_score[neighbor] = temp_f_score
+                if neighbor not in open_set_hash:
+                    count += 1
+                    open_set.put((f_score[neighbor], count, neighbor))
+                    open_set_hash.add(neighbor)
+                if neighbor != end:
+                    nebrs.append(neighbor)
+                    neighbor.make_open()
+        if current != start:
+            vis += c
+            visited.append(current)
+            current.make_visited()
+        visit_animation(visited)
+        for rows in grid:
+            for node in rows:
+                node.draw(win)
+        draw_grid(win, len(grid), width)
+        pygame.display.update()
+    return visited, False
+
+#######################################################
+# TO GENERATE A DEPTH-FIRST SEARCH MAZE               #
+#######################################################
+def is_free(grid, x, y):
+    count = 0
+    if y+1 < len(grid) and grid[x][y+1].is_barrier() :
+        count +=1
+    if y-1>=0 and grid[x][y-1].is_barrier():
+        count +=1
+    if x+1 < len(grid) and grid[x+1][y].is_barrier():
+        count+=1
+    if x-1>=0 and grid[x-1][y].is_barrier():
+        count+=1
+    if count >= 3:
+        return True
+    return False
+
+def unvisited_n(grid, x, y):
+    n = []
+    if y+1 < len(grid) and grid[x][y+1].is_barrier() and is_free(grid, x, y+1):
+        n.append((x, y+1))
+    if y-1>=0 and grid[x][y-1].is_barrier() and is_free(grid, x, y-1):
+        n.append((x, y-1))
+    if x+1 < len(grid) and grid[x+1][y].is_barrier() and is_free(grid, x+1, y):
+        n.append((x+1, y))
+    if x-1>=0 and grid[x-1][y].is_barrier() and is_free(grid, x-1, y):
+        n.append((x-1, y))
+    return n
+
+def make_black(grid, win):
+    for row in grid:
+        for node in row:
+            node.make_barrier()
+            node.draw(win)
+    pygame.display.update()
+
+def dfs_maze(draw, width, grid, start, end, left, right, top, bottom, win, vertical=True):
+    make_black(grid, win)
+    x, y = 1, 1
+    head = grid[x][y]
+    head.looking_at()
+    stack = [(x, y)]
+    while True:
+        neighbors = unvisited_n(grid, x, y)
+        if len(neighbors) > 0:
+            random_index = np.random.randint(len(neighbors))
+            x, y = neighbors[random_index]
+            head = grid[x][y]
+            head.looking_at()
+            stack.append((x, y))
+            head.draw(win)
+            draw_grid(win, len(grid), width)
+            pygame.display.update()
+        else:
+            if len(stack) > 0:
+                x, y = stack.pop()
+                grid[x][y].reset()
+                grid[x][y].draw(win)
+                draw_grid(win, len(grid), width)
+                pygame.display.update()
+            if len(stack) > 0:
+                x, y = stack[-1]
+            else:
+                break
+
+######################################################
+# TO DRAW GRID, GRIDLINES AND EVERYTHING ELSE        #
+######################################################
 def make_grid(rows, width):
     # Make the overall grid
     grid = []
@@ -406,14 +534,13 @@ def draw(win, grid, rows, width, algorithms, options, output, menu = True):
         text = gui_font.render("Algorithms", 1, WHITE)
         top = 0
         end = ht // 10
-        win.blit(text, (width+delta // 5 + 10, (end-top) / 2))
+        win.blit(text, (width+delta // 5 + 25, (end-top) / 2))
         for algorithm in algorithms:
             algorithm.draw(win)
-        
         end += 200
         top += 200
         text = gui_font.render("Options", 1, WHITE)
-        win.blit(text, (width+delta // 6 + 60, ((end-top) / 2) + top))
+        win.blit(text, (width+delta // 6 + 70, ((end-top) / 2) + top))
         for option in options:
             option.draw(win)
         output.draw(WIN)
@@ -438,13 +565,15 @@ def main(win, width):
     button_height = ht // 15
     button_width = delta // 4
     algorithms = [
-        Button(width + delta / 4 + 10, top_start, button_width - button_height + 210, button_height, "A* Search Algorithm", 6)
+        Button(width + delta / 4 + 10, top_start, button_width - button_height + 210, button_height, "A*", 6),
+        Button(width + delta / 4 + 10, top_start + 80, button_width - button_height + 210, button_height, "Dijkstra", 6)
     ]
     top_start = top_start + 500
     options = [
-        Button(width+delta // 5 + 10, top_start - 300, button_width - button_height + 20, button_height, "Clear", 6),
-        Button(width+delta // 5 + 300, top_start - 300, 100, button_height, "-", 6),
-        Button(width+delta // 5 + 200, top_start - 300, 100, button_height, "+", 6),
+        Button(width + delta / 4 + 10, top_start - 300, button_width - button_height + 50, button_height, "Clear", 6),
+        Button(width + delta // 5 + 300, top_start - 300, 70, button_height, "-", 6),
+        Button(width + delta // 5 + 230, top_start - 300, 70, button_height, "+", 6),
+        Button(width + delta / 4 + 10, top_start - 220, 330, button_height, "Generate DFS Maze", 6)
     ] #Options
     output = InfoScreen(width + delta // 8 - 70, ht - 320, 660, 300, "Choose an Algorithm")
     output.set_label1(f"Grid: {ROWS} x {ROWS}")
@@ -514,6 +643,27 @@ def main(win, width):
                         visited, path = astar(lambda: draw(win, grid, ROWS, width, algorithms, options, output), grid, start, end, output, win, width)
                         if not path:
                             output.set_text1("Path not available") 
+                elif algorithms[1].is_hover(pos):
+                    output.draw(win)
+                    if len(weighted):
+                        for node in weighted:
+                            node.make_weight()
+                    if start and end:
+                        for row in grid:
+                            for node in row:
+                                node.update_neighbors(grid)
+                                if not node.is_neutral() and node != start and node != end and not node.is_barrier() and not node.is_weight():
+                                    node.reset()
+                        visited = []
+                        path = []
+                        output.set_text1("Finding...")
+                        output.set_text2("")
+                        output.set_text3("")
+                        output.draw(win)
+                        pygame.display.update()
+                        visited, path = dijkstra(lambda: draw(win, grid, ROWS, width, algorithms, options, output), grid, start, end, output, win, width)
+                        if not path:
+                            output.set_text1("Path not available") 
                 elif options[0].is_hover(pos):
                     output.set_text1("1. Pick starting node")
                     output.set_text2("2. Pick ending node")
@@ -557,6 +707,25 @@ def main(win, width):
                         ROWS += 1
                         grid = make_grid(ROWS, width)
                     output.set_label1(f"Grid: {ROWS} x {ROWS}")
+                elif options[3].is_hover(pos):
+                    output.set_text1("Generating...")
+                    output.set_text2("")
+                    output.set_text3("")
+                    output.draw(win)
+                    pygame.display.update()
+                    start = None
+                    end = None
+                    visited = []
+                    path = []
+                    weighted = []
+                    for row in grid:
+                        for node in row:
+                            if node.is_barrier() or node.is_start() or node.is_end():
+                                node.reset()
+                    dfs_maze(lambda: draw(win, grid, ROWS, width, algorithms, options, output), width, grid, start, end, 0, ROWS, 0, ROWS, win)
+                    output.set_text1("1. Pick starting node")
+                    output.set_text2("2. Pick ending node")
+                    output.set_text3("3. Choose an algorithm")
     pygame.quit()
     sys.exit()
 
