@@ -213,6 +213,7 @@ class InfoScreen:
         self.text1 = text
         self.text2 = ""
         self.text3 = ""
+        self.text4 = ""
         
     def set_label1(self, label):
         self.label1 = label
@@ -223,6 +224,8 @@ class InfoScreen:
         self.text2 = text
     def set_text3(self, text):
         self.text3 = text
+    def set_text4(self, text):
+        self.text4 = text
         
     def get_text1(self):
         return self.text1
@@ -243,6 +246,9 @@ class InfoScreen:
         if self.text3 != '':
             text = gui_font.render(self.text3, 1, WHITE)
             win.blit(text, (self.x + 170, self.y + 200))
+        if self.text4 != '':
+            text = gui_font.render(self.text4, 1, WHITE)
+            win.blit(text, (self.x + 170, self.y + 250))
 
 def h(p1, p2): 
     # The heuristic Function using Manhattan distance
@@ -579,7 +585,8 @@ def main(win, width):
     output.set_label1(f"Grid: {ROWS} x {ROWS}")
     output.set_text1("1. Pick starting node")
     output.set_text2("2. Pick ending node")
-    output.set_text3("3. Choose an algorithm")
+    output.set_text3("3. Draw obstacles/maze")
+    output.set_text4("4. Choose an algorithm")
     start = None
     end = None
 
@@ -638,6 +645,7 @@ def main(win, width):
                         output.set_text1("Finding...")
                         output.set_text2("")
                         output.set_text3("")
+                        output.set_text4("")
                         output.draw(win)
                         pygame.display.update()
                         visited, path = astar(lambda: draw(win, grid, ROWS, width, algorithms, options, output), grid, start, end, output, win, width)
@@ -659,6 +667,7 @@ def main(win, width):
                         output.set_text1("Finding...")
                         output.set_text2("")
                         output.set_text3("")
+                        output.set_text4("")
                         output.draw(win)
                         pygame.display.update()
                         visited, path = dijkstra(lambda: draw(win, grid, ROWS, width, algorithms, options, output), grid, start, end, output, win, width)
@@ -667,7 +676,8 @@ def main(win, width):
                 elif options[0].is_hover(pos):
                     output.set_text1("1. Pick starting node")
                     output.set_text2("2. Pick ending node")
-                    output.set_text3("3. Choose an algorithm")
+                    output.set_text3("3. Draw obstacles/maze")
+                    output.set_text4("4. Choose an algorithm")
                     output.draw(win)
                     pygame.display.update()
                     weighted = []
@@ -711,6 +721,7 @@ def main(win, width):
                     output.set_text1("Generating...")
                     output.set_text2("")
                     output.set_text3("")
+                    output.set_text4("")
                     output.draw(win)
                     pygame.display.update()
                     start = None
@@ -725,7 +736,8 @@ def main(win, width):
                     dfs_maze(lambda: draw(win, grid, ROWS, width, algorithms, options, output), width, grid, start, end, 0, ROWS, 0, ROWS, win)
                     output.set_text1("1. Pick starting node")
                     output.set_text2("2. Pick ending node")
-                    output.set_text3("3. Choose an algorithm")
+                    output.set_text3("3. Draw obstacles/maze")
+                    output.set_text4("4. Choose an algorithm")
     pygame.quit()
     sys.exit()
 
