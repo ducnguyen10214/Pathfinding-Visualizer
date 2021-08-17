@@ -7,4 +7,4 @@ Demo: https://user-images.githubusercontent.com/74991701/129491608-0d63a6fa-3d38
 ## Confidential
 Personal project. There is a Windows executable file in "build", which was constructed using cx_freeze on a Windows machine.
 
-Start - End: Aug 2021
+Started - Ended: Aug 2021
