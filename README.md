@@ -8,3 +8,6 @@ Demo: https://user-images.githubusercontent.com/74991701/129a491608-0d63a6fa-3d3
 - At the beginning of the simulation, users pick the starting node and the ending node.
 - Proceed to draw out the obstacles manually / generate the obstacles automatically using `Generate DFS Maze`.
 - Choose either `A*` or `Djikstra` shortest-path algorithms to find the shortest path between the starting node and the ending node.
+
+# Confidentiality
+- Duc Nguyen's personal project.
