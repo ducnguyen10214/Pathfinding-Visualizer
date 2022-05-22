@@ -11,3 +11,4 @@ Demo: https://user-images.githubusercontent.com/74991701/129a491608-0d63a6fa-3d3
 
 # Confidentiality
 - Duc Nguyen's personal project.
+- Completed in Summer 2021.
